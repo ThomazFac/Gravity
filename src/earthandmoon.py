@@ -2,14 +2,13 @@ from matplotlib import pyplot as plt
 import numpy as np
 import Body as b
 
-
 # =========================================================
 
 
 def Fg(M1, M2):
     #  Gravitational force acting in a body
     dr = b.dist(M1, M2)
-    F = GG * (M1.m * M2.m) / dr ** 2  # Gravitational force [N]
+    F = GG * M1.m * M2.m / dr ** 2  # Gravitational force [N]
     return F
 
 # =========================================================
@@ -74,7 +73,7 @@ def posit(B1, B2, B3, time, dt):
     A, B, C = B1, B2, B3
 
     # Tuple of lists with the three bodies position (x, y, z) in each time step
-    vec = ([A.r], [B.r], [C.r])
+    vec = [[A.r], [B.r], [C.r]]
 
     for i in range(1, len(time) - 1):
         A, B, C = step(A, B, C, dt)
@@ -88,11 +87,11 @@ def posit(B1, B2, B3, time, dt):
 # =========================================================
 
 
-def motion(position, time, mode=0):
+def motion(position, time):
     #  Plotting the bodies motion
     #  Mode can be 0 or 1 to path or shadow plot, respectively
-    x_data = ([], [], [])
-    y_data = ([], [], [])
+    x_data = [[], [], []]
+    y_data = [[], [], []]
     for i in range(len(time) - 1):
 
         colors = ('blue', 'grey', 'gold')
@@ -101,52 +100,49 @@ def motion(position, time, mode=0):
         Bx, By, z = position[1][i]
         Cx, Cy, z = position[2][i]
 
-        x_data[0].append(Ax)
-        x_data[1].append(Bx)
-        x_data[2].append(Cx)
-        y_data[0].append(Ay)
-        y_data[1].append(By)
-        y_data[2].append(Cy)
+        x_data[0] = list(zip(*position[0]))[0]
+        y_data[0] = list(zip(*position[0]))[1]
+        x_data[1] = list(zip(*position[1]))[0]
+        y_data[1] = list(zip(*position[1]))[1]
 
         plt.clf()
         plt.axis('equal')
 
         limit = 0.01
         plt.xlim(-limit, limit)
-        plt.ylim(-limit, limit * 1.2)
-        plt.plot(Ax, Ay, marker='o', color=colors[0], ms=20, mec='green')
-        plt.text(Ax, Ay, 'Earth')
-        plt.plot(Bx, By, marker='o', color=colors[1], ms=10)
-        plt.text(Bx, By, 'Moon')
-        plt.plot(Cx, Cy, marker='o', color=colors[2], ms=5)
-        plt.text(Cx, Cy, 'Comet')
+        plt.ylim(-limit, limit)
+        plt.xticks([])
+        plt.yticks([])
 
-        if mode == 0:
-            plt.plot(x_data[0], y_data[0], '--', color=colors[0])
-            plt.plot(x_data[1], y_data[1], '--', color=colors[1])
-            plt.plot(x_data[2], y_data[2], '--', color=colors[2])
+        plt.scatter(Ax, Ay, color=colors[0], linewidths=10)
+        plt.scatter(Bx, By, color=colors[1], linewidths=3)
+        plt.scatter(Cx, Cy, color=colors[2], linewidths=2)
 
-        elif mode == 1:
-            x = 40  # Length of the shadow
-            aux = np.linspace(0, 0.8, x)
-            if i > x:
-                x_values = ([], [], [])
-                y_values = ([], [], [])
+        plt.title('')
+        plt.legend(['Earth', 'Moon', 'Comet'], loc='lower center', ncol=3, edgecolor='white')
 
-                for j in range(x):
-                    for k in range(3):  # For the three bodies
-                        x_values[k].append(position[k][i - j][0])
-                        y_values[k].append(position[k][i - j][1])
+        plt.plot(x_data[1], y_data[1], '--', color='black', linewidth=0.5)
+        plt.plot(x_data[0], y_data[0], '--', color='black', linewidth=0.5)
 
-                for j in range(1, x):
-                    for k in range(3):
-                        plt.plot([x_values[k][j], x_values[k][j - 1]], [y_values[k][j], y_values[k][j - 1]],
-                                 linewidth=5 * (1 - aux[j]), alpha=0.8 - aux[j], color=colors[k])
+        x = 20  # Length of the shadow
+        aux = np.linspace(0, 0.8, x)
+        if i > x:
+            x_values = ([], [], [])
+            y_values = ([], [], [])
+
+            for j in range(x):
+                for k in range(3):  # For the three bodies
+                    x_values[k].append(position[k][i - j][0])
+                    y_values[k].append(position[k][i - j][1])
+
+            for j in range(1, x):
+                plt.plot([x_values[2][j], x_values[2][j - 1]], [y_values[2][j], y_values[2][j - 1]],
+                         linewidth=5 * (1 - aux[j]), alpha=0.8 - aux[j], color=colors[2])
 
         plt.pause(0.0001)
-    plt.figure(figsize=(8, 8), dpi=80)
-    plt.show()
 
+    plt.show()
+    return x_data, y_data
 
 # =========================================================
 #  Nondimensionalisation of physical parameters
@@ -155,25 +151,25 @@ def motion(position, time, mode=0):
 G = 6.67428e-11                 # Gravitational Constant
 RR = 1.496e11                   # Normalizing distance in km (= 1 AU)
 MM = 5.972e24                   # Normalizing mass
-TT = 365 * 24 * 60 * 60.0       # Normalizing time (1 year)
+TT = 24 * 60 * 60.0             # Normalizing time (1 day)
 
 GG = (MM * G * TT ** 2) / (RR ** 3)
 
 # =========================================================
 #  Defining the bodies and time parameters
 
-B1 = b.Body(r=(0, 0, 0), dr=(0, 0, 0), M=1)                                     # Earth
-B2 = b.Body(r=(0.002569, 0, 0), dr=(0, np.sqrt(GG / 0.002569), 0), M=0.0123)    # Moon
-B3 = b.Body(r=(-0.01, 0, 0), dr=(0.5, 0.5, 0), M=1e-08)                         # Comet
+B1 = b.Body(r=(0, 0, 0), dr=(0, 0, 0), M=1)                                            # Earth
+B2 = b.Body(r=(0.002569, 0, 0), dr=(0, np.sqrt(GG / 0.002569), 0), M=0.0123)           # Moon
+B3 = b.Body(r=(-0.02, -0.022, 0), dr=(0.01, 0.01, 0), M=1e-08)                         # Comet
 
-ti = 0  # initial time = 0
-tf = 1  # final time = 1 year
+ti = 0          # initial time
+tf = 27.32     # final time (1 moon orbit)
 
-N = 10000 * tf                  # 10000 points per year
-t = np.linspace(ti, tf, N)      # time array from ti to tf with N points
+N = int(100 * tf)                  # 100 points per year
+t = np.linspace(ti, tf, N)         # time array from ti to tf with N points
 
 h = t[2] - t[1]  # time step (uniform)
 
 position = posit(B1, B2, B3, t, h)
 
-motion(position, t, mode=1)
+motion(position, t)
